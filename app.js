@@ -312,7 +312,7 @@ let pendingDeleteMessageStudentId = null;
             grades: [],
             members: [], // NOUVEAU: comptes/members gérés localement (email, role, id, created_at)
             settings: {
-                appName: "Perfect School",
+            appName: "Sahel School",
                 theme: "light",
                 alertThreshold: 5,
                 // NOUVEAUX PARAMÈTRES AJOUTÉS
@@ -324,7 +324,7 @@ let pendingDeleteMessageStudentId = null;
                 }
             },
             schoolSettings: {
-                school_name: "Perfect School",
+                school_name: "Sahel School",
                 // logo_url: "" (SUPPRIMÉ)
             }
         };
@@ -2278,7 +2278,7 @@ let pendingDeleteMessageStudentId = null;
                 doc.text('Centre de Rapports', 14, 20);
                 
                 // Informations de l'école
-                const schoolName = appData.schoolSettings?.school_name || 'Perfect School';
+                const schoolName = appData.schoolSettings?.school_name || 'Sahel School';
                 doc.setFontSize(12);
                 doc.text(schoolName, 14, 30);
                 doc.text(`Période: ${formatDate(data.startDate)} - ${formatDate(data.endDate)}`, 14, 36);
@@ -2383,7 +2383,7 @@ let pendingDeleteMessageStudentId = null;
                 
                 // En-tête
                 csvContent += 'Centre de Rapports\n';
-                csvContent += `École: ${appData.schoolSettings?.school_name || 'Perfect School'}\n`;
+                csvContent += `École: ${appData.schoolSettings?.school_name || 'Sahel School'}\n`;
                 csvContent += `Période: ${formatDate(data.startDate)} - ${formatDate(data.endDate)}\n`;
                 csvContent += `Généré le: ${new Date().toLocaleDateString('fr-FR')}\n\n`;
                 
@@ -2514,7 +2514,7 @@ let pendingDeleteMessageStudentId = null;
                     
                     await Capacitor.Plugins.Share.share({
                         title: title,
-                        text: `Document Perfect School - ${filename}`,
+                        text: `Document Sahel School - ${filename}`,
                         url: base64, // Pass the base64 data URL
                         dialogTitle: 'Partager le PDF'
                     });
@@ -2532,7 +2532,7 @@ let pendingDeleteMessageStudentId = null;
         }
 
         // Fonction de partage mobile universelle
-        async function sharePDFMobile(pdfBlob, filename, title = "Document Perfect School") {
+        async function sharePDFMobile(pdfBlob, filename, title = "Document Sahel School") {
             try {
                 // Essayer d'abord Capacitor
                 if (await shareViaCapacitor(pdfBlob, filename, title)) {
@@ -2715,7 +2715,12 @@ let pendingDeleteMessageStudentId = null;
                     : (typeof supabase !== 'undefined' ? supabase : null);
                 
                 if (!supabaseGlobal || typeof supabaseGlobal.createClient !== 'function') {
-                    throw new Error('La librairie Supabase n\'est pas chargée');
+                    console.warn('⚠️ Supabase ne s\'est pas chargé (window.supabase absent). L\'application fonctionnera en mode limité (sans connexion Supabase).');
+                    // Afficher au moins l'écran de login pour que l'UI soit utilisable
+                    if (typeof showLogin === 'function') {
+                        showLogin();
+                    }
+                    return false;
                 }
                 
                 supabase = supabaseGlobal.createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -2945,7 +2950,7 @@ function hideButtonsForNonAdminMembers() {
         // Mettre à jour le nom de l'école dans l'UI
         function updateSchoolNameInUI() {
             // CORRECTION: Utiliser appData.settings.appName en priorité (synchronisé avec Supabase)
-            const schoolName = appData.settings.appName || appData.schoolSettings.school_name || 'Perfect School';
+            const schoolName = appData.settings.appName || appData.schoolSettings.school_name || 'Sahel School';
             document.getElementById('app-name').textContent = schoolName;
             if (document.getElementById('login-school-name')) {
                 document.getElementById('login-school-name').textContent = schoolName;
@@ -2954,7 +2959,7 @@ function hideButtonsForNonAdminMembers() {
             // Mettre à jour les valeurs par défaut dans les formulaires
             const schoolInputs = document.querySelectorAll('input[id$="school"]');
             schoolInputs.forEach(input => {
-                if (input.value === 'Perfect School' || !input.value) {
+                if (input.value === 'Sahel School' || !input.value) {
                     input.value = schoolName;
                 }
             });
@@ -2998,7 +3003,7 @@ function hideButtonsForNonAdminMembers() {
         
         // Système de cache intelligent
         const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-        const CACHE_PREFIX = 'perfect_school_cache_';
+        const CACHE_PREFIX = 'sahel_school_cache_';
         
         function getCacheKey(key) {
             return `${CACHE_PREFIX}${effectiveUserId}_${key}`;

@@ -21,6 +21,9 @@
         console.log('✅ Supabase ESM chargé');
     </script>
 
+    <!-- QRCode generator (global qrcode) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
@@ -37,9 +40,9 @@
             <div class="card w-full max-w-md mx-4 theme-transition">
                 <div class="card-header text-center">
                     <div class="w-16 h-16 gradient-bg rounded-2xl flex items-center justify-center mx-auto mb-4 theme-transition">
-                        <span class="text-white font-bold text-xl">PS</span>
+                        <span class="text-white font-bold text-xl">SA</span>
                     </div>
-                    <h1 class="text-lg font-bold text-primary" id="login-school-name">Perfect School</h1>
+                    <h1 class="text-lg font-bold text-primary" id="login-school-name">Sahel School</h1>
                     <p class="text-sm text-muted-foreground mt-2">
                         Connectez-vous à votre compte
                     </p>
@@ -98,9 +101,9 @@
                 <div class="flex h-14 md:h-16 items-center px-2 sm:px-4">
                     <div class="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-shrink">
                         <div class="w-7 h-7 sm:w-8 sm:h-8 gradient-bg rounded-lg flex items-center justify-center theme-transition flex-shrink-0">
-                            <span class="text-white font-bold text-xs sm:text-sm">PS</span>
+                            <span class="text-white font-bold text-xs sm:text-sm">SA</span>
                         </div>
-                        <h1 class="compact-title text-gray-900 text-sm sm:text-base md:text-lg truncate" id="app-name">Perfect School</h1>
+                        <h1 class="compact-title text-gray-900 text-sm sm:text-base md:text-lg truncate" id="app-name">Sahel School</h1>
                     </div>
                     
                     <div class="ml-auto flex items-center space-x-1 sm:space-x-2 relative flex-shrink-0">
@@ -278,7 +281,7 @@
                     </div>
                     <div class="space-y-2">
                         <label class="text-sm font-medium">Établissement</label>
-                        <input type="text" id="student-school" class="input" value="Perfect School" required>
+                        <input type="text" id="student-school" class="input" value="Sahel School" required>
                     </div>
                     <div class="space-y-2">
                         <label class="text-sm font-medium">Année scolaire</label>
