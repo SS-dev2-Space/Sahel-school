@@ -2702,8 +2702,8 @@ let pendingDeleteMessageStudentId = null;
         // Initialisation de Supabase
         function initializeSupabase() {
             try {
-                const SUPABASE_URL = "https://xvrxfwbdzyhuexnwkgdk.supabase.co";
-                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cnhmd2JkenlodWV4bndrZ2RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NzUyMjUsImV4cCI6MjA3NzU1MTIyNX0.ag0c96y4Pz-yT2wlpI8cwDaVvMkYqatKWgLCDBpxr_M";
+                const SUPABASE_URL = "https://qsozbohychixzlgpviif.supabase.co";
+                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzb3pib2h5Y2hpeHpsZ3B2aWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4OTk1ODcsImV4cCI6MjA3ODQ3NTU4N30.gGrrUPqXTsReXHk8p94TvLpqJ_P10t90yTbz4CHWojM";
                 
                 // Récupérer le global Supabase quelle que soit la forme exposée par le script UMD
                 console.log('🔍 Vérification des globals Supabase:', 
