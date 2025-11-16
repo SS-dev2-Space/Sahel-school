@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Sahel School</title>
+
+    <!-- Liaison avec les fichiers de style et de script -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Librairies externes nécessaires -->
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Chart.js pour les graphiques des rapports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Script principal de l'application -->
+    <script defer src="app.js"></script>
+</head>
+<body class="bg-gray-50 theme-transition" data-theme="light">
+    <div id="app">
+        <!-- Page de Login -->
+        <div id="login-page" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 theme-transition safe-top safe-bottom">
+            <div class="card w-full max-w-md mx-4 theme-transition">
+                <div class="card-header text-center">
+                    <div class="w-16 h-16 gradient-bg rounded-2xl flex items-center justify-center mx-auto mb-4 theme-transition">
+                        <span class="text-white font-bold text-xl">PS</span>
+                    </div>
+                    <h1 class="text-lg font-bold text-primary" id="login-school-name">Perfect School</h1>
+                    <p class="text-sm text-muted-foreground mt-2">
+                        Connectez-vous à votre compte
+                    </p>
+                </div>
+                <div class="card-content">
+                    <form id="login-form" class="space-y-4">
+                        <div class="space-y-2">
+                            <label for="email" class="text-sm font-medium">Email</label>
+                            <input 
+                                id="email" 
+                                type="email" 
+                                placeholder="votre@email.com" 
+                                class="input"
+                                required
+                            >
+                        </div>
+                        <div class="space-y-2">
+                            <label for="password" class="text-sm font-medium">Mot de passe</label>
+                            <div class="relative">
+                                <input 
+                                    id="password" 
+                                    type="password" 
+                                    placeholder="••••••••" 
+                                    class="input pr-10" required
+                                >
+                                <button 
+                                    type="button" 
+                                    id="login-eye-icon"
+                                    onclick="togglePasswordVisibility('password', 'login-eye-icon-lucide')"
+                                    class="btn btn-ghost btn-icon absolute top-1/2 right-1 -translate-y-1/2" 
+                                >
+                                    <i id="login-eye-icon-lucide" data-lucide="eye" class="h-4 w-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="login-error" class="text-sm text-red-500 text-center hidden"></div>
+                        <button type="submit" class="btn btn-default w-full theme-transition">
+                            <span id="login-text">Se connecter</span>
+                            <span id="login-loading" class="hidden">
+                                <svg class="loading-spinner h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Connexion...
+                            </span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="hidden min-h-screen bg-gray-50 theme-transition">
+            <!-- Top Navigation -->
+            <header class="border-b bg-white theme-transition safe-top">
+                <div class="flex h-14 md:h-16 items-center px-2 sm:px-4">
+                    <div class="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-shrink">
+                        <div class="w-7 h-7 sm:w-8 sm:h-8 gradient-bg rounded-lg flex items-center justify-center theme-transition flex-shrink-0">
+                            <span class="text-white font-bold text-xs sm:text-sm">PS</span>
+                        </div>
+                        <h1 class="compact-title text-gray-900 text-sm sm:text-base md:text-lg truncate" id="app-name">Perfect School</h1>
+                    </div>
+                    
+                    <div class="ml-auto flex items-center space-x-1 sm:space-x-2 relative flex-shrink-0">
+                        <button id="theme-toggle" class="btn btn-ghost btn-icon" title="Changer le thème">
+                            <i data-lucide="sun" class="h-4 w-4"></i>
+                        </button>
+                        <span class="text-xs sm:text-sm text-gray-600 hidden md:block truncate max-w-[120px]" id="user-email"></span>
+                        
+                        <!-- NOUVEAU: Bouton Centre de Rapports -->
+                        <button onclick="showReportCenter()" class="btn btn-ghost btn-icon relative hidden sm:flex" title="Centre de Rapports">
+                            <i data-lucide="bar-chart-3" class="h-4 w-4"></i>
+                        </button>
+                        
+                        <!-- Bouton Notifications avec badge - Masqué pour les membres non-admin -->
+                        <div id="notifications-container" class="relative">
+                            <button id="notifications-btn" class="btn btn-ghost btn-icon relative" title="Notifications">
+                                <i data-lucide="bell" class="h-4 w-4"></i>
+                                <span id="notification-badge" class="notification-badge hidden">0</span>
+                            </button>
+                            
+                            <!-- Menu déroulant des notifications -->
+                            <div id="notifications-dropdown" class="notifications-dropdown hidden">
+                                <div class="p-4 border-b border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <h3 class="font-semibold text-sm sm:text-base">Historique des notifications</h3>
+                                        <button onclick="clearAllNotifications()" class="text-xs sm:text-sm text-blue-600 hover:text-blue-800">
+                                            Tout effacer
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="notifications-list" class="max-h-64 overflow-y-auto">
+                                    <!-- Les notifications seront chargées ici -->
+                                </div>
+                                <div class="notification-actions">
+                                    <button onclick="notificationManager.markAllAsRead()" class="btn btn-outline btn-sm">
+                                        Tout marquer lu
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button id="logout-btn" class="btn btn-ghost btn-sm flex items-center space-x-1 sm:space-x-2 theme-transition" title="Déconnexion">
+                            <i data-lucide="log-out" class="h-4 w-4"></i>
+                            <span class="hidden lg:inline">Déconnexion</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex">
+                <!-- Sidebar - Desktop (CACHÉE SUR MOBILE) -->
+                <aside class="hidden md:block w-64 border-r bg-white min-h-[calc(100vh-4rem)] theme-transition">
+                    <nav class="p-4 space-y-2">
+                        <button data-page="dashboard" class="nav-btn btn btn-ghost w-full justify-start theme-transition">
+                            <i data-lucide="home" class="h-4 w-4 mr-3"></i>
+                            Accueil
+                        </button>
+                        <button data-page="students" class="nav-btn btn btn-ghost w-full justify-start theme-transition">
+                            <i data-lucide="users" class="h-4 w-4 mr-3"></i>
+                            Élèves
+                        </button>
+                        <!-- NOUVEAU: Onglet Matières et Notes -->
+                        <button data-page="subjects" class="nav-btn btn btn-ghost w-full justify-start theme-transition">
+                            <i data-lucide="book-open" class="h-4 w-4 mr-3"></i>
+                            Matières et Notes
+                        </button>
+                        <button data-page="attendance" class="nav-btn btn btn-ghost w-full justify-start theme-transition">
+                            <i data-lucide="calendar" class="h-4 w-4 mr-3"></i>
+                            Présence
+                        </button>
+                        <button data-page="history" class="nav-btn btn btn-ghost w-full justify-start theme-transition">
+                            <i data-lucide="history" class="h-4 w-4 mr-3"></i>
+                            Historique
+                        </button>
+
+                        <!-- NOUVEAU : Onglet Compte -->
+                        <button data-page="accounts" class="nav-btn btn btn-ghost w-full justify-start theme-transition">
+                            <i data-lucide="user-check" class="h-4 w-4 mr-3"></i>
+                            Compte
+                        </button>
+
+                        <button data-page="settings" class="nav-btn btn btn-ghost w-full justify-start theme-transition">
+                            <i data-lucide="settings" class="h-4 w-4 mr-3"></i>
+                            Paramètres
+                        </button>
+                    </nav>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="flex-1 p-2 sm:p-4 md:p-6 pb-20 sm:pb-24 md:pb-6">
+                    <div id="page-content" class="scroll-touch"></div>
+                </main>
+            </div>
+
+            <!-- Bottom Navigation - Mobile -->
+            <nav class="mobile-nav md:hidden">
+                <div class="flex justify-around">
+                    <button data-page="dashboard" class="mobile-nav-btn nav-btn flex flex-col items-center space-y-1 theme-transition">
+                        <i data-lucide="home" class="h-5 w-5"></i>
+                        <span class="text-xs">Accueil</span>
+                    </button>
+                    <button data-page="students" class="mobile-nav-btn nav-btn flex flex-col items-center space-y-1 theme-transition">
+                        <i data-lucide="users" class="h-5 w-5"></i>
+                        <span class="text-xs">Élèves</span>
+                    </button>
+                    <!-- NOUVEAU: Onglet Matières et Notes Mobile -->
+                    <button data-page="subjects" class="mobile-nav-btn nav-btn flex flex-col items-center space-y-1 theme-transition">
+                        <i data-lucide="book-open" class="h-5 w-5"></i>
+                        <span class="text-xs">Notes</span>
+                    </button>
+                    <button data-page="attendance" class="mobile-nav-btn nav-btn flex flex-col items-center space-y-1 theme-transition">
+                        <i data-lucide="calendar" class="h-5 w-5"></i>
+                        <span class="text-xs">Présence</span>
+                    </button>
+                    <button data-page="history" class="mobile-nav-btn nav-btn flex flex-col items-center space-y-1 theme-transition">
+                        <i data-lucide="history" class="h-5 w-5"></i>
+                        <span class="text-xs">Historique</span>
+                    </button>
+
+                    <!-- NOUVEAU : Onglet Compte mobile -->
+                    <button data-page="accounts" class="mobile-nav-btn nav-btn flex flex-col items-center space-y-1 theme-transition">
+                        <i data-lucide="user-check" class="h-5 w-5"></i>
+                        <span class="text-xs">Compte</span>
+                    </button>
+
+                    <button data-page="settings" class="mobile-nav-btn nav-btn flex flex-col items-center space-y-1 theme-transition">
+                        <i data-lucide="settings" class="h-5 w-5"></i>
+                        <span class="text-xs">Paramètres</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Modals -->
+        <div id="modal-overlay" class="dialog-overlay hidden"></div>
+        
+        <!-- Add Student Modal -->
+        <div id="add-student-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Ajouter un nouvel élève</h2>
+                <button onclick="closeModal('add-student-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="add-student-form" class="space-y-4">
+                <div class="space-y-4">
+                    <!-- Photo de l'élève -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Photo de l'élève</label>
+                        <div class="photo-upload" onclick="document.getElementById('student-photo').click()">
+                            <i data-lucide="camera" class="h-8 w-8 text-gray-400 mx-auto mb-2"></i>
+                            <p class="text-sm text-gray-600">Cliquez pour ajouter une photo</p>
+                            <input type="file" id="student-photo" accept="image/*" class="hidden">
+                        </div>
+                        <div id="photo-preview" class="hidden mt-2 text-center">
+                            <img id="preview-image" class="student-avatar mx-auto">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Nom</label>
+                            <input type="text" id="student-lastname" class="input" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Prénom</label>
+                            <input type="text" id="student-firstname" class="input" required>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Classe</label>
+                        <select id="student-class" class="select-trigger" required>
+                            <option value="">Sélectionner une classe</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Établissement</label>
+                        <input type="text" id="student-school" class="input" value="Perfect School" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Année scolaire</label>
+                        <input type="text" id="student-year" class="input" value="2024-2025" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Matricule</label>
+                        <input type="text" id="student-matricule" class="input" placeholder="Ex: MAT2024001">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Date de naissance</label>
+                            <input type="date" id="student-birthdate" class="input">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Lieu de naissance</label>
+                            <input type="text" id="student-birthplace" class="input" placeholder="Niamey">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Numéro du parent</label>
+                        <input type="tel" id="student-parent-phone" class="input" placeholder="+227 XX XX XX XX" required>
+                    </div>
+                    <!-- NOUVEAUX CHAMPS AJOUTÉS -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Email du parent</label>
+                        <input type="email" id="student-parent-email" class="input" placeholder="parent@email.com">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Adresse du parent</label>
+                        <input type="text" id="student-parent-address" class="input" placeholder="Adresse du parent">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition" id="add-student-submit">
+                    Ajouter l'élève
+                </button>
+            </form>
+        </div>
+
+        <!-- Edit Student Modal -->
+        <div id="edit-student-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Modifier l'élève</h2>
+                <button onclick="closeModal('edit-student-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="edit-student-form" class="space-y-4">
+                <input type="hidden" id="edit-student-id">
+                <div class="space-y-4">
+                    <!-- Photo de l'élève -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Photo de l'élève</label>
+                        <div class="photo-upload" onclick="document.getElementById('edit-student-photo').click()">
+                            <i data-lucide="camera" class="h-8 w-8 text-gray-400 mx-auto mb-2"></i>
+                            <p class="text-sm text-gray-600">Cliquez pour changer la photo</p>
+                            <input type="file" id="edit-student-photo" accept="image/*" class="hidden">
+                        </div>
+                        <div id="edit-photo-preview" class="mt-2 text-center">
+                            <img id="edit-preview-image" class="student-avatar mx-auto">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Nom</label>
+                            <input type="text" id="edit-student-lastname" class="input" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Prénom</label>
+                            <input type="text" id="edit-student-firstname" class="input" required>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Classe</label>
+                        <select id="edit-student-class" class="select-trigger" required>
+                            <option value="">Sélectionner une classe</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Établissement</label>
+                        <input type="text" id="edit-student-school" class="input" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Année scolaire</label>
+                        <input type="text" id="edit-student-year" class="input" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Matricule</label>
+                        <input type="text" id="edit-student-matricule" class="input" placeholder="Ex: MAT2024001">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Date de naissance</label>
+                            <input type="date" id="edit-student-birthdate" class="input">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Lieu de naissance</label>
+                            <input type="text" id="edit-student-birthplace" class="input" placeholder="Niamey">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Numéro du parent</label>
+                        <input type="tel" id="edit-student-parent-phone" class="input" placeholder="+227 XX XX XX XX" required>
+                    </div>
+                    <!-- NOUVEAUX CHAMPS AJOUTÉS -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Email du parent</label>
+                        <input type="email" id="edit-student-parent-email" class="input" placeholder="parent@email.com">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Adresse du parent</label>
+                        <input type="text" id="edit-student-parent-address" class="input" placeholder="Adresse du parent">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition" id="edit-student-submit">
+                    Modifier l'élève
+                </button>
+            </form>
+        </div>
+
+        <!-- Add Class Modal -->
+        <div id="add-class-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Créer une nouvelle classe</h2>
+                <button onclick="closeModal('add-class-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="add-class-form" class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Nom de la classe</label>
+                    <input type="text" id="class-name" class="input" placeholder="6ème A" required>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Niveau</label>
+                    <select id="class-level" class="select-trigger" required>
+                        <option value="Primaire">Primaire</option>
+                        <option value="Collège">Collège</option>
+                        <option value="Lycée">Lycée</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition" id="add-class-submit">
+                    Créer la classe
+                </button>
+            </form>
+        </div>
+
+        <!-- QR Scanner Modal -->
+        <div id="scanner-modal" class="dialog-content hidden" style="max-width: 600px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Scanner un QR Code</h2>
+                <button onclick="closeScanner()" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="scanner-container">
+                <video id="scanner-video" class="scanner-video" autoplay playsinline></video>
+                <div id="scanner-overlay" class="scanner-overlay hidden">
+                    <div class="text-center text-white">
+                        <i data-lucide="camera" class="h-12 w-12 mx-auto mb-2"></i>
+                        <p>Scanner en cours...</p>
+                    </div>
+                </div>
+            </div>
+            <div id="camera-error-message" class="hidden"></div>
+            <div class="camera-fallback">
+                <button onclick="useManualEntry()" class="btn btn-outline">
+                    <i data-lucide="keyboard" class="h-4 w-4 mr-2"></i>
+                    Saisie manuelle
+                </button>
+            </div>
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-600">Placez le QR code de l'élève devant la caméra</p>
+            </div>
+        </div>
+
+        <!-- NOUVEAU: Justify Absence Modal amélioré -->
+        <div id="justify-absence-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Justifier une absence</h2>
+                <button onclick="closeModal('justify-absence-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="justify-absence-form" class="space-y-4">
+                <input type="hidden" id="justify-attendance-id">
+                <input type="hidden" id="justify-student-id">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Élève</label>
+                    <p id="justify-student-name" class="font-semibold"></p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Date</label>
+                    <p id="justify-attendance-date" class="font-semibold"></p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Type de justification</label>
+                    <select id="justification-type" class="select-trigger" required>
+                        <option value="sick">Maladie</option>
+                        <option value="absent_justified">Absence justifiée</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Justification</label>
+                    <textarea id="justification-note" class="input" rows="3" placeholder="Raison de l'absence..."></textarea>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Preuve (optionnelle)</label>
+                    <div class="photo-upload" onclick="document.getElementById('justification-proof').click()">
+                        <i data-lucide="camera" class="h-8 w-8 text-gray-400 mx-auto mb-2"></i>
+                        <p class="text-sm text-gray-600">Cliquez pour ajouter une preuve (ordonnance, certificat...)</p>
+                        <input type="file" id="justification-proof" accept="image/*" class="hidden">
+                    </div>
+                    <div id="justification-proof-preview" class="hidden mt-2 text-center">
+                        <img id="justification-preview-image" class="proof-image mx-auto">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition">
+                    Justifier l'absence
+                </button>
+            </form>
+        </div>
+
+        <!-- Student Profile Modal -->
+        <div id="student-profile-modal" class="dialog-content compact-profile hidden" style="max-width: 800px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Profil de l'élève</h2>
+                <div class="compact-share-buttons">
+                    <button id="edit-student-btn-profile" onclick="showEditStudentModal(currentStudentId)" class="btn btn-outline btn-sm" title="Modifier">
+                        <i data-lucide="edit" class="h-4 w-4"></i>
+                    </button>
+                    <button id="delete-student-btn-profile" onclick="confirmDeleteStudentFromProfile(currentStudentId)" class="btn btn-destructive btn-sm" title="Supprimer">
+                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                    </button>
+                    <button onclick="shareStudentProfileAsync()" class="btn btn-outline btn-sm" title="Partager Profil">
+                        <i data-lucide="user" class="h-4 w-4"></i>
+                    </button>
+                    <button onclick="shareStudentHistoryAsync()" class="btn btn-outline btn-sm" title="Partager Historique">
+                        <i data-lucide="file-text" class="h-4 w-4"></i>
+                    </button>
+                    <button onclick="closeModal('student-profile-modal')" class="btn btn-ghost btn-icon">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="student-profile-content">
+                <!-- Le contenu du profil sera chargé ici -->
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-confirm-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-red-600">Confirmation de suppression</h2>
+                <button onclick="closeModal('delete-confirm-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p id="delete-confirm-message" class="text-muted-foreground"></p>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Tapez "SUPPRIMER" pour confirmer</label>
+                    <input type="text" id="delete-confirm-input" class="input" placeholder="SUPPRIMER">
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="closeModal('delete-confirm-modal')" class="btn btn-outline flex-1">
+                        Annuler
+                    </button>
+                    <button id="delete-confirm-btn" class="btn btn-destructive flex-1">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Student Modal -->
+        <div id="delete-student-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-red-600">Supprimer un élève</h2>
+                <button onclick="closeModal('delete-student-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-muted-foreground">Sélectionnez l'élève à supprimer :</p>
+                <select id="delete-student-select" class="select-trigger">
+                    <option value="">Sélectionner un élève</option>
+                </select>
+                <div class="flex space-x-2">
+                    <button onclick="closeModal('delete-student-modal')" class="btn btn-outline flex-1">
+                        Annuler
+                    </button>
+                    <button onclick="confirmDeleteStudent()" class="btn btn-destructive flex-1">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Class Modal -->
+        <div id="delete-class-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-red-600">Supprimer une classe</h2>
+                <button onclick="closeModal('delete-class-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-muted-foreground">Sélectionnez la classe à supprimer :</p>
+                <select id="delete-class-select" class="select-trigger">
+                    <option value="">Sélectionner une classe</option>
+                </select>
+                <div class="flex space-x-2">
+                    <button onclick="closeModal('delete-class-modal')" class="btn btn-outline flex-1">
+                        Annuler
+                    </button>
+                    <button onclick="confirmDeleteClass()" class="btn btn-destructive flex-1">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Class Profiles Modal -->
+        <div id="share-class-profiles-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Partager tous les profils d'une classe</h2>
+                <button onclick="closeModal('share-class-profiles-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-muted-foreground">Sélectionnez la classe dont vous voulez partager tous les profils :</p>
+                <select id="share-class-select" class="select-trigger">
+                    <option value="">Sélectionner une classe</option>
+                </select>
+                <div class="bg-blue-50 p-3 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <i data-lucide="info" class="h-4 w-4 inline mr-2"></i>
+                        Le PDF généré contiendra uniquement les informations personnelles des élèves (sans statistiques de présence)
+                    </p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="closeModal('share-class-profiles-modal')" class="btn btn-outline flex-1">
+                        Annuler
+                    </button>
+                    <button onclick="generateClassProfilesPDFAsync()" class="btn btn-default flex-1">
+                        <i data-lucide="share-2" class="h-4 w-4 mr-2"></i>
+                        Générer PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modale de confirmation de suppression de membre -->
+        <div id="confirm-delete-member-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-red-600">⚠️ Confirmer la suppression</h2>
+                <button onclick="closeModal('confirm-delete-member-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="alert-triangle" class="h-5 w-5 text-red-600 mt-0.5"></i>
+                        <div>
+                            <p class="font-semibold text-red-800 mb-2">Attention ! Cette action est irréversible.</p>
+                            <p class="text-sm text-red-700" id="confirm-delete-member-message">
+                                Êtes-vous sûr de vouloir supprimer ce membre ? Toutes ses données et assignations seront définitivement supprimées.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="closeModal('confirm-delete-member-modal')" class="btn btn-outline flex-1">
+                        <i data-lucide="x" class="h-4 w-4 mr-2"></i>
+                        Annuler
+                    </button>
+                    <button onclick="confirmDeleteMemberAction()" class="btn btn-destructive flex-1">
+                        <i data-lucide="trash-2" class="h-4 w-4 mr-2"></i>
+                        Supprimer définitivement
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modale de confirmation de suppression de message -->
+        <div id="confirm-delete-message-modal" class="dialog-content hidden" style="max-width: 320px; padding: 1.5rem;">
+            <div class="text-center mb-4">
+                <p class="text-sm font-medium text-gray-700 mb-4">Confirmer la suppression ?</p>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="closeModal('confirm-delete-message-modal')" class="btn btn-outline flex-1" style="padding: 0.5rem;">
+                    Non
+                </button>
+                <button onclick="confirmDeleteMessageAction()" class="btn btn-destructive flex-1" style="padding: 0.5rem;">
+                    Oui
+                </button>
+            </div>
+        </div>
+
+        <!-- NOUVEAU: Modal pour afficher la preuve d'image -->
+        <div id="proof-image-modal" class="dialog-content hidden" style="max-width: 600px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Preuve de justification</h2>
+                <button onclick="closeModal('proof-image-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <img id="proof-image-display" class="proof-image-preview mx-auto">
+                <p id="proof-image-caption" class="text-sm text-gray-600 mt-2"></p>
+            </div>
+        </div>
+
+        <!-- NOUVEAU: Modal Ajouter une matière -->
+        <div id="add-subject-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Ajouter une matière</h2>
+                <button onclick="closeModal('add-subject-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="add-subject-form" class="space-y-4">
+                <input type="hidden" id="add-subject-class-id">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Nom de la matière</label>
+                    <input type="text" id="subject-name" class="input" placeholder="Mathématiques" required>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Note sur</label>
+                    <input type="number" id="subject-max-score" class="input" placeholder="20" min="1" max="1000" value="20" required>
+                    <p class="text-xs text-gray-600">Entrez librement la valeur (ex: 5, 10, 20, 25, 50, 100, etc.)</p>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition">
+                    Ajouter la matière
+                </button>
+            </form>
+        </div>
+
+        <!-- NOUVEAU: Modal Modifier une matière -->
+        <div id="edit-subject-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Modifier la matière</h2>
+                <button onclick="closeModal('edit-subject-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="edit-subject-form" class="space-y-4">
+                <input type="hidden" id="edit-subject-id">
+                <input type="hidden" id="edit-subject-class-id">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Nom de la matière</label>
+                    <input type="text" id="edit-subject-name" class="input" required>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Note sur</label>
+                    <input type="number" id="grade-max-score" class="input" placeholder="20" min="1" max="1000" value="20" required>
+                    <p class="text-xs text-gray-600">Barème libre (ex: 5, 10, 20, 25, 50, 100...)</p>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition">
+                    Modifier la matière
+                </button>
+            </form>
+        </div>
+
+        <!-- NOUVEAU: Modal Ajouter une note -->
+        <div id="add-grade-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Ajouter une note</h2>
+                <button onclick="closeModal('add-grade-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="add-grade-form" class="space-y-4">
+                <input type="hidden" id="add-grade-class-id">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Élève</label>
+                    <select id="grade-student-select" class="select-trigger" required>
+                        <option value="">Sélectionner un élève</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Matière</label>
+                    <select id="grade-subject-select" class="select-trigger" required>
+                        <option value="">Sélectionner une matière</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Note</label>
+                    <input type="number" id="grade-score" class="input" placeholder="15.5" step="0.5" min="0" required>
+                </div>
+
+                <!-- CHAMP AJOUTÉ -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Nom de la note (Ex: Devoir, Composition...)</label>
+                    <input type="text" id="grade-name" class="input" placeholder="Composition Trimestre 1" required>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Commentaire (optionnel)</label>
+                    <textarea id="grade-comment" class="input" rows="3" placeholder="Très bon travail..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition">
+                    Ajouter la note
+                </button>
+            </form>
+        </div>
+
+        <!-- NOUVEAU: Modal Modifier une note -->
+        <div id="edit-grade-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Modifier la note</h2>
+                <button onclick="closeModal('edit-grade-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <form id="edit-grade-form" class="space-y-4">
+                <input type="hidden" id="edit-grade-id">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Élève</label>
+                    <p id="edit-grade-student-name" class="font-semibold"></p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Matière</label>
+                    <p id="edit-grade-subject-name" class="font-semibold"></p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Note</label>
+                    <input type="number" id="edit-grade-score" class="input" step="0.5" min="0" required>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Commentaire (optionnel)</label>
+                    <textarea id="edit-grade-comment" class="input" rows="3" placeholder="Très bon travail..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-default w-full theme-transition">
+                    Modifier la note
+                </button>
+            </form>
+        </div>
+
+        <!-- NOUVEAU: Modal Voir les notes d'un élève -->
+        <div id="student-grades-modal" class="dialog-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold" id="student-grades-title">Notes de l'élève</h2>
+                <button onclick="closeModal('student-grades-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div id="student-grades-content">
+                <!-- Les notes seront affichées ici -->
+            </div>
+        </div>
+
+        <!-- NOUVEAU: Modal Tableau de notes par matière -->
+        <div id="subject-grades-table-modal" class="dialog-content hidden" style="max-width: 95vw;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold" id="subject-grades-title">Tableau de Notes</h2>
+                <button onclick="closeModal('subject-grades-table-modal')" class="btn btn-ghost btn-icon">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div id="subject-grades-content" class="max-h-[70vh] overflow-y-auto scroll-touch">
+            </div>
+    </div>
+
+    <div id="edit-attendance-modal" class="dialog-content hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">Modifier la présence</h2>
+            <button onclick="closeModal('edit-attendance-modal')" class="btn btn-ghost btn-icon">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <input type="hidden" id="edit-attendance-id">
+            <div class="space-y-2">
+                <label class="text-sm font-medium">Élève</label>
+                <p id="edit-attendance-student-name" class="font-semibold"></p>
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-medium">Date</label>
+                <p id="edit-attendance-date" class="font-semibold"></p>
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-medium">Nouveau statut</label>
+                <div id="edit-attendance-buttons" class="flex flex-wrap gap-2">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOUVEAU: Centre de Rapports Modal -->
+    <div id="report-center-modal" class="dialog-content hidden" style="max-width: 95vw; max-height: 90vh;">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">📊 Centre de Rapports</h2>
+            <button onclick="closeModal('report-center-modal')" class="btn btn-ghost btn-icon">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <!-- Sélection de période -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Date de début</label>
+                    <input type="date" id="report-date-start" class="input" required>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Date de fin</label>
+                    <input type="date" id="report-date-end" class="input" required>
+                </div>
+            </div>
+            
+            <!-- Boutons de période rapide -->
+            <div class="flex flex-wrap gap-2">
+                <button onclick="setReportPeriod('today')" class="btn btn-outline btn-sm">Aujourd'hui</button>
+                <button onclick="setReportPeriod('yesterday')" class="btn btn-outline btn-sm">Hier</button>
+                <button onclick="setReportPeriod('week')" class="btn btn-outline btn-sm">Cette semaine</button>
+                <button onclick="setReportPeriod('month')" class="btn btn-outline btn-sm">Ce mois</button>
+                <button onclick="setReportPeriod('lastMonth')" class="btn btn-outline btn-sm">Mois dernier</button>
+            </div>
+            
+            <!-- Bouton générer -->
+            <button onclick="runReport()" class="btn btn-default w-full" id="generate-report-btn">
+                <i data-lucide="play" class="h-4 w-4 mr-2"></i>
+                Générer le rapport
+            </button>
+            
+            <!-- Zone de résultats -->
+            <div id="report-results" class="hidden">
+                <!-- Onglets -->
+                <div class="border-b mb-4">
+                    <div class="flex space-x-2">
+                        <button onclick="switchReportTab('overview')" class="report-tab-btn active px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-medium">
+                            Vue d'ensemble
+                        </button>
+                        <button onclick="switchReportTab('classes')" class="report-tab-btn px-4 py-2 border-b-2 border-transparent text-gray-600 hover:text-blue-600">
+                            Par classe
+                        </button>
+                        <button onclick="switchReportTab('risks')" class="report-tab-btn px-4 py-2 border-b-2 border-transparent text-gray-600 hover:text-blue-600">
+                            Élèves à risque
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Contenu des onglets -->
+                <div id="report-tab-overview" class="report-tab-content">
+                    <!-- Statistiques globales -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="font-semibold">Statistiques Globales</h3>
+                        </div>
+                        <div class="card-content" id="report-overview-stats">
+                            <!-- Les statistiques seront affichées ici -->
+                        </div>
+                    </div>
+                    
+                    <!-- Graphiques -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="font-semibold">Répartition des présences</h3>
+                            </div>
+                            <div class="card-content">
+                                <canvas id="report-chart-presence" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="font-semibold">Taux de présence par classe</h3>
+                            </div>
+                            <div class="card-content">
+                                <canvas id="report-chart-classes" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="report-tab-classes" class="report-tab-content hidden">
+                    <div id="report-classes-content">
+                        <!-- Analyse par classe -->
+                    </div>
+                </div>
+                
+                <div id="report-tab-risks" class="report-tab-content hidden">
+                    <div id="report-risks-content">
+                        <!-- Élèves à risque -->
+                    </div>
+                </div>
+                
+                <!-- Boutons d'export -->
+                <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+                    <button onclick="exportReportToPDF()" class="btn btn-default flex-1">
+                        <i data-lucide="file-text" class="h-4 w-4 mr-2"></i>
+                        Exporter en PDF
+                    </button>
+                    <button onclick="exportReportToExcel()" class="btn btn-outline flex-1">
+                        <i data-lucide="file-spreadsheet" class="h-4 w-4 mr-2"></i>
+                        Exporter en Excel
+                    </button>
+                    <button onclick="exportReportToCSV()" class="btn btn-outline flex-1">
+                        <i data-lucide="file-text" class="h-4 w-4 mr-2"></i>
+                        Exporter en CSV
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Indicateur de chargement -->
+            <div id="report-loading" class="hidden text-center py-8">
+                <svg class="loading-spinner h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-sm text-gray-600">Génération du rapport en cours...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NOUVEAU: Modal de confirmation de déconnexion -->
+    <div id="logout-confirm-modal" class="dialog-content hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-red-600 flex items-center">
+                <i data-lucide="log-out" class="h-5 w-5 mr-2"></i>
+                Confirmer la déconnexion
+            </h2>
+            <button onclick="closeModal('logout-confirm-modal')" class="btn btn-ghost btn-icon">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <p class="text-gray-600">Êtes-vous sûr de vouloir vous déconnecter ?</p>
+            <div class="flex space-x-2">
+                <button onclick="closeModal('logout-confirm-modal')" class="btn btn-outline flex-1">
+                    <i data-lucide="x" class="h-4 w-4 mr-2"></i>
+                    Annuler
+                </button>
+                <button onclick="performLogout()" class="btn btn-destructive flex-1">
+                    <i data-lucide="log-out" class="h-4 w-4 mr-2"></i>
+                    Se déconnecter
+                </button>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+    
+</body>
+</html>
