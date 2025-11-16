@@ -2700,37 +2700,42 @@ let pendingDeleteMessageStudentId = null;
         };
 
         // Initialisation de Supabase
-       function initializeSupabase() {
-    try {
-        const SUPABASE_URL = "https://xvrxfwbdzyhuexnwkgdk.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cnhmd2JkenlodWV4bndrZ2RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NzUyMjUsImV4cCI6MjA3NzU1MTIyNX0.ag0c96y4Pz-yT2wlpI8cwDaVvMkYqatKWgLCDBpxr_M";
-        
-        if (typeof window.supabase === 'undefined') {
-            throw new Error('La librairie Supabase n\'est pas chargée');
+        function initializeSupabase() {
+            try {
+                const SUPABASE_URL = "https://xvrxfwbdzyhuexnwkgdk.supabase.co";
+                const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cnhmd2JkenlodWV4bndrZ2RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NzUyMjUsImV4cCI6MjA3NzU1MTIyNX0.ag0c96y4Pz-yT2wlpI8cwDaVvMkYqatKWgLCDBpxr_M";
+                
+                // Récupérer le global Supabase quelle que soit la forme exposée par le script UMD
+                const supabaseGlobal = (typeof window !== 'undefined' && window.supabase)
+                    ? window.supabase
+                    : (typeof supabase !== 'undefined' ? supabase : null);
+                
+                if (!supabaseGlobal || typeof supabaseGlobal.createClient !== 'function') {
+                    throw new Error('La librairie Supabase n\'est pas chargée');
+                }
+                
+                supabase = supabaseGlobal.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: false
+                    }
+                });
+
+                // L'écouteur est toujours utile pour la DÉCONNEXION.
+                supabase.auth.onAuthStateChange((_event, session) => {
+                    if (_event === 'SIGNED_OUT') {
+                        showLogin();
+                    }
+                });
+
+                console.log('✅ Supabase initialisé avec succès');
+                return true;
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'initialisation de Supabase:', error);
+                return false;
+            }
         }
-        
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: false
-            }
-        });
-
-        // L'écouteur est toujours utile pour la DÉCONNEXION.
-        supabase.auth.onAuthStateChange((_event, session) => {
-            if (_event === 'SIGNED_OUT') {
-                showLogin();
-            }
-        });
-
-        console.log('✅ Supabase initialisé avec succès');
-        return true;
-    } catch (error) {
-        console.error('❌ Erreur lors de l\'initialisation de Supabase:', error);
-        return false;
-    }
-}
 
         // Charger les paramètres depuis le localStorage
         function loadSettings() {
