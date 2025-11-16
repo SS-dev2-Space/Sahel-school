@@ -2706,6 +2706,10 @@ let pendingDeleteMessageStudentId = null;
                 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cnhmd2JkenlodWV4bndrZ2RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NzUyMjUsImV4cCI6MjA3NzU1MTIyNX0.ag0c96y4Pz-yT2wlpI8cwDaVvMkYqatKWgLCDBpxr_M";
                 
                 // Récupérer le global Supabase quelle que soit la forme exposée par le script UMD
+                console.log('🔍 Vérification des globals Supabase:', 
+                    'window.supabase =', typeof window !== 'undefined' ? window.supabase : 'no-window',
+                    'supabase =', (typeof supabase !== 'undefined') ? supabase : 'undefined'
+                );
                 const supabaseGlobal = (typeof window !== 'undefined' && window.supabase)
                     ? window.supabase
                     : (typeof supabase !== 'undefined' ? supabase : null);
