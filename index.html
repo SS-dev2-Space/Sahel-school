@@ -14,8 +14,12 @@
     <link rel="stylesheet" href="styles.css">
 
     <!-- Librairies externes nécessaires -->
-    <!-- Supabase (version UMD navigateur) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/supabase.min.js"></script>
+    <!-- Supabase via module ESM : expose window.supabase.createClient pour app.js -->
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+        window.supabase = { createClient };
+        console.log('✅ Supabase ESM chargé');
+    </script>
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
