@@ -5021,9 +5021,10 @@ function applyRoleBasedUI() {
                 <label class="text-sm font-medium">Rôle</label>
                 <select id="member-role" class="select-trigger" required onchange="toggleAssignmentSection()">
                     <option value="">Sélectionner un rôle</option>
-                    <option value="proffesseur">proffesseur</option>
-                    <option value="parent">parent</option>
-                    <option value="gardiant">gardiant</option>
+                    <option value="proffesseur">Professeur</option>
+                    <option value="parent">Parent</option>
+                    <option value="gardiant">Gardien</option>
+                    <option value="eleve">Élève</option>
                 </select>
             </div>
 
@@ -5055,6 +5056,17 @@ function applyRoleBasedUI() {
                         <div id="assignment-students-list" class="max-h-48 overflow-y-auto border rounded-lg bg-white p-2"></div>
                     </div>
                 </div>
+                <div id="assignment-for-student" class="hidden space-y-2">
+                    <p class="text-xs text-gray-600">L'élève n'aura accès qu'aux informations de l'élève que vous sélectionnez. Un compte élève doit être lié à un seul élève existant.</p>
+                    <div class="relative mb-2">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></i>
+                        <input type="text" id="student-student-search" class="input pl-9" placeholder="Rechercher un élève...">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2"><label class="text-sm font-medium">Élève à assigner (un seul)</label></div>
+                        <div id="assignment-student-single-list" class="max-h-48 overflow-y-auto border rounded-lg bg-white p-2"></div>
+                    </div>
+                </div>
                 <div class="text-xs text-gray-600 text-center bg-white p-2 rounded-md"><span id="assignment-summary">Sélectionnez un rôle pour commencer l'assignation.</span></div>
                 <button type="button" onclick="clearAssignments()" class="btn btn-outline btn-sm w-full"><i data-lucide="trash-2" class="h-4 w-4 mr-2"></i>Effacer les sélections</button>
             </div>
@@ -5071,13 +5083,14 @@ function loadAccountsPage() {
     const teachers = appData.members.filter(m => m.role === 'proffesseur');
     const parents = appData.members.filter(m => m.role === 'parent');
     const guardians = appData.members.filter(m => m.role === 'gardiant');
+    const students = appData.members.filter(m => m.role === 'eleve');
 
     document.getElementById('page-content').innerHTML = `
         <div class="space-y-6 fade-in">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">Gestion des Comptes</h1>
-                    <p class="text-gray-600">Ajoutez et gérez les accès pour les professeurs, parents et gardiens.</p>
+                    <p class="text-gray-600">Ajoutez et gérez les accès pour les professeurs, parents, gardiens et élèves.</p>
                 </div>
             </div>
 
@@ -5143,6 +5156,21 @@ function loadAccountsPage() {
                             </div>
                         </div>
                     </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-xl font-bold">Élèves <span class="text-lg font-semibold text-blue-600">(${students.length})</span></h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <tbody class="divide-y divide-gray-200">
+                                        ${students.length > 0 ? students.map(createMemberTableRowHTML).join('') : '<tr><td colspan="2" class="text-center text-gray-500 py-4">Aucun élève</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -5201,6 +5229,11 @@ function createMemberTableRowHTML(member) {
 
     if (member.role === 'parent' && member.assigned_student_ids?.length > 0) {
         assignmentsText = `${member.assigned_student_ids.length} élève(s)`;
+    } else if (member.role === 'eleve' && member.assigned_student_ids?.length > 0) {
+        // Pour un élève, on affiche le nom de l'élève assigné
+        const studentId = member.assigned_student_ids[0];
+        const student = appData.students.find(s => s.id === studentId);
+        assignmentsText = student ? `${student.first_name} ${student.last_name}` : 'Élève assigné';
     } else if (member.role === 'proffesseur') {
         const classCount = member.assigned_class_ids?.length || 0;
         const subjectCount = member.assigned_subject_ids?.length || 0;
@@ -5374,10 +5407,12 @@ async function confirmDeleteMemberAction() {
     const role = document.getElementById('member-role').value;
     const teacherSection = document.getElementById('assignment-for-teacher');
     const parentSection = document.getElementById('assignment-for-parent');
+    const studentSection = document.getElementById('assignment-for-student');
     
-    // Cacher les deux sections d'abord
+    // Cacher toutes les sections d'abord
     if (teacherSection) teacherSection.classList.add('hidden');
     if (parentSection) parentSection.classList.add('hidden');
+    if (studentSection) studentSection.classList.add('hidden');
     
     // Vider les sélections pour éviter les bugs
     clearAssignments();
@@ -5390,6 +5425,10 @@ async function confirmDeleteMemberAction() {
         section.classList.remove('hidden');
         parentSection.classList.remove('hidden');
         initializeAssignmentUI('parent'); // Initialise l'interface pour le parent
+    } else if (role === 'eleve') {
+        section.classList.remove('hidden');
+        studentSection.classList.remove('hidden');
+        initializeAssignmentUI('student'); // Initialise l'interface pour l'élève
     } else {
         section.classList.add('hidden'); // Cacher pour le gardien
     }
@@ -5407,6 +5446,8 @@ function initializeAssignmentUI(mode) {
     } else if (mode === 'parent') {
         document.getElementById('parent-student-search').addEventListener('input', () => renderAssignmentLists('parent'));
         document.getElementById('select-all-students').addEventListener('click', () => toggleSelectAll('student'));
+    } else if (mode === 'student') {
+        document.getElementById('student-student-search').addEventListener('input', () => renderAssignmentLists('student'));
     }
     // Affiche la liste initiale
     renderAssignmentLists(mode);
@@ -5478,6 +5519,33 @@ function renderAssignmentLists(mode) {
             `;
         }).join('');
         studentsListDiv.innerHTML = studentHtml || emptyListHTML('élève');
+    } else if (mode === 'student') {
+        // --- Gère la liste des élèves pour un compte élève (sélection unique) ---
+        const studentSingleListDiv = document.getElementById('assignment-student-single-list');
+        const searchTerm = document.getElementById('student-student-search').value.toLowerCase();
+        const filteredStudents = appData.students.filter(student => {
+            const fullName = `${student.first_name} ${student.last_name}`.toLowerCase();
+            return fullName.includes(searchTerm);
+        });
+
+        const studentsByClass = filteredStudents.reduce((acc, student) => {
+            const classId = student.class_id || 'unassigned';
+            if (!acc[classId]) { acc[classId] = []; }
+            acc[classId].push(student);
+            return acc;
+        }, {});
+        
+        let studentHtml = Object.keys(studentsByClass).map(classId => {
+            const className = appData.classes.find(c => c.id === classId)?.name || 'Élèves non assignés';
+            const studentsHtml = studentsByClass[classId].map(s => createRadioHTML('student', s, s.id)).join('');
+            return `
+                <details class="mb-2" open>
+                    <summary class="font-semibold text-gray-700 cursor-pointer p-2 bg-gray-100 rounded hover:bg-gray-200">${className}</summary>
+                    <div class="pl-4 pt-2 space-y-1">${studentsHtml}</div>
+                </details>
+            `;
+        }).join('');
+        studentSingleListDiv.innerHTML = studentHtml || emptyListHTML('élève');
     }
     
     lucide.createIcons();
@@ -5528,6 +5596,45 @@ function createCheckboxHTML(type, item, id) {
 }
 
 /**
+ * Crée le HTML pour un bouton-radio d'assignation (pour les élèves - sélection unique).
+ */
+function createRadioHTML(type, item, id) {
+    const typeIds = {
+        'class': currentAssignments.classIds,
+        'subject': currentAssignments.subjectIds,
+        'student': currentAssignments.studentIds
+    }[type];
+    const isChecked = typeIds.has(id);
+
+    let labelText = '';
+    if (type === 'student') {
+        const classInfo = appData.classes.find(c => c.id === item.class_id);
+        labelText = `${item.first_name} ${item.last_name} <span class='text-xs text-gray-500'>(${classInfo ? classInfo.name : 'N/A'})</span>`;
+    } else {
+        labelText = item.name;
+    }
+
+    const selectedClasses = isChecked ?
+        'bg-blue-100 text-blue-800 font-semibold border-blue-200' : 
+        'bg-white hover:bg-gray-50 border-gray-200';
+
+    return `
+        <button 
+            type="button" 
+            class="w-full flex items-center space-x-3 p-3 border rounded-lg cursor-pointer assignment-radio-item text-left transition-all duration-200 ${selectedClasses}" 
+            data-type="${type}" 
+            data-id="${id}"
+        >
+            <i 
+                data-lucide="${isChecked ? 'check-circle-2' : 'circle'}" 
+                class="h-5 w-5 flex-shrink-0 ${isChecked ? 'text-blue-600' : 'text-gray-400'}"
+            ></i>
+            <span class="text-sm">${labelText}</span>
+        </button>
+    `;
+}
+
+/**
  * Affiche un message si la liste d'assignation est vide.
  */
 function emptyListHTML(itemType) {
@@ -5535,9 +5642,10 @@ function emptyListHTML(itemType) {
 }
 
 /**
- * Ajoute les écouteurs de clic pour les boutons-checkbox.
+ * Ajoute les écouteurs de clic pour les boutons-checkbox et radio.
  */
 function addAssignmentClickListeners() {
+    // Gérer les checkboxes (professeur, parent)
     document.querySelectorAll('.assignment-item').forEach(button => {
         button.addEventListener('click', e => {
             e.preventDefault();
@@ -5553,7 +5661,30 @@ function addAssignmentClickListeners() {
             }
             
             const role = document.getElementById('member-role').value;
-            renderAssignmentLists(role === 'proffesseur' ? 'teacher' : 'parent');
+            if (role === 'proffesseur') {
+                renderAssignmentLists('teacher');
+            } else if (role === 'parent') {
+                renderAssignmentLists('parent');
+            }
+        });
+    });
+    
+    // Gérer les radio buttons (élève - sélection unique)
+    document.querySelectorAll('.assignment-radio-item').forEach(button => {
+        button.addEventListener('click', e => {
+            e.preventDefault();
+            
+            const id = button.dataset.id;
+            const type = button.dataset.type;
+            const set = currentAssignments[`${type}Ids`];
+            
+            // Pour les élèves, on ne peut sélectionner qu'un seul élève
+            // Vider d'abord toutes les sélections
+            set.clear();
+            // Puis ajouter celui qui est cliqué
+            set.add(id);
+            
+            renderAssignmentLists('student');
         });
     });
 }
@@ -5583,14 +5714,27 @@ function updateAssignmentSummary() {
     const summarySpan = document.getElementById('assignment-summary');
     if (!summarySpan) return;
     
+    const role = document.getElementById('member-role')?.value;
     const classCount = currentAssignments.classIds.size;
     const subjectCount = currentAssignments.subjectIds.size;
     const studentCount = currentAssignments.studentIds.size;
     
-    summarySpan.innerHTML = `Assignation : 
-        <b>${classCount}</b> classe(s), 
-        <b>${subjectCount}</b> matière(s), 
-        <b>${studentCount}</b> élève(s).`;
+    if (role === 'eleve') {
+        if (studentCount === 0) {
+            summarySpan.innerHTML = 'Sélectionnez un élève à assigner.';
+        } else {
+            const studentId = Array.from(currentAssignments.studentIds)[0];
+            const student = appData.students.find(s => s.id === studentId);
+            summarySpan.innerHTML = student 
+                ? `Élève assigné : <b>${student.first_name} ${student.last_name}</b>`
+                : `Élève assigné`;
+        }
+    } else {
+        summarySpan.innerHTML = `Assignation : 
+            <b>${classCount}</b> classe(s), 
+            <b>${subjectCount}</b> matière(s), 
+            <b>${studentCount}</b> élève(s).`;
+    }
 }
 
 /**
@@ -5606,7 +5750,10 @@ function clearAssignments() {
         renderAssignmentLists('teacher');
     } else if (role === 'parent') {
         renderAssignmentLists('parent');
+    } else if (role === 'eleve') {
+        renderAssignmentLists('student');
     }
+    updateAssignmentSummary();
 }
 
 /**
@@ -5619,6 +5766,12 @@ function getSelectedAssignments() {
             classIds: Array.from(currentAssignments.classIds),
             subjectIds: Array.from(currentAssignments.subjectIds),
             studentIds: [] // S'assure que c'est vide
+        };
+    } else if (role === 'eleve') {
+        return {
+            classIds: [], // Les élèves n'ont pas de classes assignées
+            subjectIds: [], // Les élèves n'ont pas de matières assignées
+            studentIds: Array.from(currentAssignments.studentIds) // Un seul élève assigné
         };
     } else if (role === 'parent') {
         return {
@@ -5635,14 +5788,23 @@ function getSelectedAssignments() {
 async function handleAddMember(e) {
       e.preventDefault();
 
+      const memberRole = document.getElementById('member-role').value;
+      const selectedAssignments = getSelectedAssignments();
+
+      // Validation : pour un élève, un élève doit être assigné
+      if (memberRole === 'eleve' && selectedAssignments.studentIds.length === 0) {
+          notificationManager.show('❌ Vous devez sélectionner un élève à assigner au compte élève', 'error');
+          return;
+      }
+
       // 1. Récupérer les données du formulaire
       const rpc_params = {
         member_email: document.getElementById('member-email').value,
         member_password: document.getElementById('member-password').value,
-        member_role: document.getElementById('member-role').value,
-        class_ids: getSelectedAssignments().classIds || [],
-        subject_ids: getSelectedAssignments().subjectIds || [],
-        student_ids: getSelectedAssignments().studentIds || [],
+        member_role: memberRole,
+        class_ids: selectedAssignments.classIds || [],
+        subject_ids: selectedAssignments.subjectIds || [],
+        student_ids: selectedAssignments.studentIds || [],
         owner_id: currentUser.id // L'ID de l'admin
       };
 
